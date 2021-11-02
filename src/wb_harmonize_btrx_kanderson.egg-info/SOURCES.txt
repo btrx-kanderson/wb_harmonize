@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 setup.cfg
+setup.py
 src/wb_harmonize/__init__.py
 src/wb_harmonize/utilities.py
 src/wb_harmonize/wb_harmonize.py
