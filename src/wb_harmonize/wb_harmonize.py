@@ -7,14 +7,27 @@ import subprocess
 
 def resample_fsavg_to_fslr(gii_input, fslr_mesh, fsavg_mesh, hemi, label_or_metric, out_file):
     '''
-    Use HCP Connectome Workbench to resample a surface atlas from Freesurfer to HCP fslr space.
+    Use HCP Connectome Workbench to resample a surface file from Freesurfer to HCP fslr space.
 
-    @param gii_input: GiFTI formatted surface input file (freesurfer space)
-    @param fslr_mesh: Mesh resolution (32k, 59k, 164k) in fslr space to resample to
-    @param fsavg_mesh: Resolution of the freesurfer input gifti file (fsaverage, fsaverage6, fsaverage5, etc...)
-    @param hemi: "lh" or "rh"
-    @label_or_metric: "label" or "metric"
-    @out_file: full path to the output file (e.g. my_output.label.gii)
+    Parameters
+    ----------
+    gii_input: str, path
+        Freesurfer surface file in Gifti Format
+
+    fslr_mesh: string
+        Mesh resolution in HCP_fslr space. Can be: "164k", "59k", "32k"
+
+    fsavg_mesh: string
+        Mesh resolution in fsaverage space. Can be "fsaverage", "fsaverage6", "fsaverage5", "fsaverage4"
+
+    hemi: string
+        "lh" or "rh"
+
+    label_or_metric : string
+        "label" or "metric". Define the type of surface data being converted. 
+
+    out_file: str, path
+        Output file (e.g. my_output.label.gii)
     '''
 
     # keep track of the mesh resolution for each fsaverage space
@@ -68,7 +81,7 @@ def resample_fsavg_to_fslr(gii_input, fslr_mesh, fsavg_mesh, hemi, label_or_metr
 
 def wb_resample_label(label_in, label_out, cur_sphere, cur_area, new_sphere, new_area):
     '''
-    Wrapper for resamples label file using workbench
+    Wrapper for resampling label file using workbench
     '''
     subprocess.call(['wb_command',
                 '-label-resample',
@@ -104,13 +117,30 @@ def gii_to_annot(gii_file, white_file, annot_file):
     subprocess.call(cmd)
 
 
+def mgh_to_gii(input, output):
+    '''
+    Wrapper for Freesurfer mris_convert. 
+
+    Convert a Freesurfer surface file (e.g. lh.thickness) to Gifti format
+
+    Parameters
+    ----------
+    input: string, path
+        Full path to the input file
+
+    output: string, path
+        Full path to the output file
+    '''
+    subprocess.call([
+        'mris_convert', input, output
+    ])
+
+
 def aparc_to_gii(gii_file, white_file, aparc_file):
     subprocess.call([
         'mris_convert',
         '--annot', gii_file, white_file, aparc_file
     ])
-
-
 
 
 def resample_fslr_to_fsavg(gii_input, fslr_mesh, fsavg_mesh, hemi, label_or_metric, out_file):
