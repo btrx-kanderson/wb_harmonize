@@ -2,7 +2,149 @@
 
 import os
 import subprocess
+import shutil
 #from utilities import templates
+
+
+
+def freesurfer_resample_prep(fs_white, fs_pial, fs_sphere, group_sphere, fs_midthick, group_midthick, fs_sphere_gii):
+    '''
+    Wrapper for wb_shortcuts -freesurfer-resample-prep
+
+    Parameters
+    ----------
+    fs_white: str
+        Path to Individual space Freesurfer WHITE surface 
+
+    fs_pial: str
+        Path to Individual space Freesurfer PIAL surface 
+
+    fs_sphere: str
+        Path to Individual space Freesurfer SPHERE surface 
+
+    group_sphere: str
+        Path to the Group space sphere in the "standard_mesh_atlases/resample_fsaverage" directory
+
+    fs_midthick: str
+        Path for where to write the new Individual space Freesurfer MIDTHICKNESS surface 
+
+    group_midthick: str
+        Path for where to write the new Group space Freesurfer MIDTHICKNESS surface 
+
+    fs_sphere_gii: str
+        Path for where to write the new deformed Individual space registration SPHERE
+    '''
+    
+    # execute
+    subprocess.call([
+        'wb_shortcuts', '-freesurfer-resample-prep', 
+        fs_white, fs_pial, fs_sphere,
+        group_sphere, 
+        fs_midthick, group_midthick, 
+        fs_sphere_gii])
+
+
+def metric_resample(metric_in, current_sphere, new_sphere, metric_out, current_area, new_area):
+    '''
+    Wrapper for wb_shortcuts -freesurfer-resample-prep
+
+    Parameters
+    ----------
+    metric_in: str
+
+    current_sphere: str
+
+    new_sphere: str
+
+    metric_out: str
+
+    current_area: str
+
+    new_area: str
+
+    '''
+    # execute
+    subprocess.call([
+        'wb_command', '-metric-resample',
+        metric_in,
+        current_sphere,
+        new_sphere,
+        'ADAP_BARY_AREA',
+        metric_out,
+        '-area-surfs',
+        current_area,
+        new_area
+        ])
+
+
+def resample_fsIndiv_to_group(fs_dir, group_space, metric, out_dir):
+    '''
+    Resample a metric file (e.g. thickness) in Freesurfer Individual space to any Group surface
+
+    Parameters
+    ----------
+    fs_dir: str
+        Path to Individual Freesurfer directory (the one that contains /surf, /mri, /label, etc.)
+
+    group_space: str
+        Group surface to project to. 
+        Can be: 'fsaverage', 'fsaverage6', 'fsaverage5', 'fsaverage4', 'fslr164k', 'fslr32k', 'fslr59k'
+
+    metric: str or list of strings
+        Which modality to convert.
+        Can be: 'thickness', 'area', 'volume', 'curv'
+
+    out_dir: str
+        Directory to place all output files
+    '''
+
+    #fs_dir = '/fmri-qunex/research/imaging/datasets/embarc/processed_data/pf-pipelines/qunex-nbridge/studies/embarc-20201122-LHzJPHi4/sessions/MG0008_baseline/hcp/MG0008_baseline/T1w/MG0008_baseline'
+    #out_dir = '/home/ubuntu/Projects/EMBARC/embarc_palm/work/MG0008_baseline'
+    #group_space = 'fslr32k'
+    #hemi = 'lh'
+    if type(metric) == str:
+        metric_list = [metric]
+    else:
+        metric_list = metric
+    
+    # temporary directory for intermediate files
+    tmp_dir = os.path.join(out_dir, 'tmp')
+    if not os.path.exists(tmp_dir):
+        os.mkdir(tmp_dir)
+
+    for hemi in ['lh', 'rh']:
+        # Define paths with static directory structure
+        fs_white       = os.path.join(fs_dir, 'surf/{}.white'.format(hemi))
+        fs_pial        = os.path.join(fs_dir, 'surf/{}.pial'.format(hemi))
+        fs_sphere      = os.path.join(fs_dir, 'surf/{}.sphere'.format(hemi))
+        fs_sphere_gii  = os.path.join(tmp_dir, '{}.sphere.reg.surf.gii'.format(hemi))
+        fs_midthick    = os.path.join(tmp_dir, '{}.midthickness.surf.gii'.format(hemi))
+        group_midthick = os.path.join(tmp_dir, '{}.midthickness.{}.surf.gii'.format(hemi, group_space))
+        group_sphere   = templates[group_space][hemi]['sphere']
+
+        # Prep for resampling by converting to gifti and creating midthickness files
+        freesurfer_resample_prep(fs_white, fs_pial, fs_sphere, group_sphere, fs_midthick, group_midthick, fs_sphere_gii)
+        
+        for cur_metric in metric_list:
+            # define metric i/o
+            fs_metric_in = os.path.join(fs_dir, 'surf/{}.{}'.format(hemi, cur_metric))
+            metric_in    = os.path.join(tmp_dir, '{}.{}.func.gii'.format(hemi, cur_metric))
+            metric_out   = os.path.join(out_dir, '{}.{}.{}.func.gii'.format(hemi, group_space, cur_metric))
+
+            # convert the individual freesurfer metric file to a gifti
+            mgh_to_gii(input=fs_metric_in, white_file=fs_white, output=metric_in)
+            
+            # resample from individual freesurfer to group space
+            metric_resample(metric_in=metric_in, 
+                            current_sphere=fs_sphere_gii, 
+                            new_sphere=group_sphere, 
+                            metric_out=metric_out, 
+                            current_area=fs_midthick, 
+                            new_area=group_midthick)
+    
+    # remove intermediate files
+    shutil.rmtree(tmp_dir)
+
 
 
 def resample_fsavg_to_fslr(gii_input, fslr_mesh, fsavg_mesh, hemi, label_or_metric, out_file):
@@ -117,7 +259,7 @@ def gii_to_annot(gii_file, white_file, annot_file):
     subprocess.call(cmd)
 
 
-def mgh_to_gii(input, output):
+def mgh_to_gii(input, white_file, output):
     '''
     Wrapper for Freesurfer mris_convert. 
 
@@ -132,7 +274,7 @@ def mgh_to_gii(input, output):
         Full path to the output file
     '''
     subprocess.call([
-        'mris_convert', input, output
+        'mris_convert', '-c', input, white_file, output
     ])
 
 
@@ -206,8 +348,8 @@ def resample_fslr_to_fsavg(gii_input, fslr_mesh, fsavg_mesh, hemi, label_or_metr
 # -----------------
 # Dictionary with Freesurfer/FSLR reference files
 # -----------------
-resample_dir = '../templates/surface/standard_mesh_atlases/resample_fsaverage'
-fs_dir = '../templates/surface/Freesurfer7.1.1'
+resample_dir = '../data/standard_mesh_atlases/resample_fsaverage'
+fs_dir = '../data/surface/Freesurfer7.1.1'
 
 # keep track of the mesh resolution for each fsaverage space
 fsavg_dict = {

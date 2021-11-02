@@ -1,0 +1,9 @@
+Logfile for pctsurfcon
+Mon Jul 19 10:20:24 EDT 2021
+setenv SUBJECTS_DIR /autofs/vast/freesurfer/test/recons/bert/dev/running
+cd /autofs/vast/freesurfer/test/recons/bert/dev/running/bert/scripts
+/usr/local/freesurfer/dev/bin/pctsurfcon
+pctsurfcon dev
+Linux nike 3.10.0-1160.31.1.el7.x86_64 #1 SMP Thu Jun 10 13:32:12 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
+FREESURFER_HOME /usr/local/freesurfer/dev
+Cleaning up

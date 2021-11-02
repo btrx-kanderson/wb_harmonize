@@ -1,0 +1,13 @@
+------------------------------
+SUBJECT bert
+START_TIME Mon Jul 19 06:00:10 EDT 2021
+END_TIME Mon Jul 19 10:43:28 EDT 2021
+RUNTIME_HOURS 4.722
+USER ah221
+HOST nike
+PROCESSOR x86_64
+OS Linux
+UNAME Linux nike 3.10.0-1160.31.1.el7.x86_64 #1 SMP Thu Jun 10 13:32:12 UTC 2021 x86_64 x86_64 x86_64 GNU/Linux
+VERSION dev (freesurfer-linux-centos7_x86_64-dev-20210719-dce4ffc)
+CMDPATH /usr/local/freesurfer/dev/bin/recon-all
+CMDARGS -all -s bert -i /space/freesurfer/subjects/testsets/bert/raw/003.mgz -i /space/freesurfer/subjects/testsets/bert/raw/002.mgz -i /space/freesurfer/subjects/testsets/bert/raw/001.mgz
